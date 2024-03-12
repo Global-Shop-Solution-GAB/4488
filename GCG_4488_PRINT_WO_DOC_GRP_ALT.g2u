@@ -1,0 +1,233 @@
+Program.Sub.ScreenSU.Start
+Gui.F_Main..create
+Gui.F_Main..caption("Print Documents")
+Gui.F_Main..size(6660,6375)
+Gui.F_Main..position(0,0)
+Gui.F_Main..event(UnLoad,form1_unload)
+Gui.F_Main..forecolor(0)
+Gui.F_Main..fontstyle(,,)
+Gui.F_Main..BackColor(-2147483633)
+Gui.F_Main..mousepointer(0)
+Gui.F_Main..MinX(0)
+Gui.F_Main..MinY(0)
+Gui.F_Main.cmdPrint.create(button)
+Gui.F_Main.cmdPrint.caption("Print")
+Gui.F_Main.cmdPrint.size(855,375)
+Gui.F_Main.cmdPrint.position(200,5275)
+Gui.F_Main.cmdPrint.event(Click,cmdprint_click)
+Gui.F_Main.GsGCDocs.Create(GsGridControl)
+Gui.F_Main.GsGCDocs.Size(6240,5115)
+Gui.F_Main.GsGCDocs.Position(60,60)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+
+'Hook 16090 - use the CALLING-PGM instead of the RPTID because this addresses "custom" report ID's for each customer.
+V.Local.sError.Declare(String)
+
+f.Intrinsic.Control.If(v.Passed.CALLING-PGM,<>,"BJ020LZ")
+	F.Intrinsic.Control.End
+f.Intrinsic.Control.EndIf
+
+'F.Intrinsic.Control.If(V.Passed.009001,<>,"001811")
+'	F.Intrinsic.control.End
+'F.Intrinsic.Control.EndIf
+
+F.ODBC.Connection!con.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+
+
+F.Intrinsic.Control.CallSub(Load)
+F.Intrinsic.Control.CallSub(Buildstyle)
+'F.Intrinsic.Control.If(v.DataTable.Linked.rowcount,>,1)
+
+F.Intrinsic.Control.If(v.DataTable.Linked.rowcount,>,0)
+	Gui.F_Main..show
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4488_PRINT_WO_DOC_GRP_ALT.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Form1_unload)
+Function.Intrinsic.Control.EndIf
+Program.Sub.Main.End
+
+Program.Sub.cmdprint_click.Start
+F.Intrinsic.Control.SetErrorHandler("cmdprint_click_Err")
+F.Intrinsic.Control.ClearErrors
+'Hook 16090
+V.Local.sError.Declare(String)
+V.Local.stemp.Declare(String)
+V.Local.irow.Declare(Long)
+V.Local.sprinter.Declare(String)
+Gui.F_Main.cmdPrint.Enabled(false)
+V.Local.sprinter.Set(V.Printer.DefaultPrinter)
+F.Intrinsic.Printer.SELECTPRINTERDIALOG
+
+F.Intrinsic.Control.If(V.Ambient.PrinterDialogSelection,<>,"***CANCEL***")
+	F.Intrinsic.Printer.SetDefaultPrinter(V.Ambient.printerDialogSelection)
+	F.Data.DataView.Create("Linked", "Printed",22, "[Print] = True",)
+	
+	F.Intrinsic.Control.For(V.Local.irow,0,V.DataView.Linked!Printed.Rowcount--,1)
+		F.Intrinsic.task.ShellExec(V.Caller.Handle,"PRINT",V.DataView.Linked!Printed(v.Local.irow).FilePath!fieldvaltrim,"","",5)
+	F.Intrinsic.Control.Next(V.Local.irow)
+	
+	F.Intrinsic.Printer.SetDefaultPrinter(V.Local.sprinter)
+F.Intrinsic.Control.Else
+	Gui.F_Main.cmdPrint.Enabled(TRUE)
+	F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.CallSub(form1_unload)
+
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Label("cmdprint_click_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4488_PRINT_WO_DOC_GRP_ALT.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Form1_unload)
+Function.Intrinsic.Control.EndIf
+Program.Sub.cmdprint_click.End
+
+Program.Sub.form1_unload.Start
+F.Intrinsic.Control.SetErrorHandler("form1_unload_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+F.ODBC.Connection!con.Close
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Label("form1_unload_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4488_PRINT_WO_DOC_GRP_ALT.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+
+Function.Intrinsic.Control.EndIf
+Program.Sub.form1_unload.End
+
+Program.Sub.Buildstyle.Start
+F.Intrinsic.Control.SetErrorHandler("Buildstyle_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+Gui.F_Main.GsGCDocs.SetGridviewProperty("Select", "Readonly", False)
+Gui.F_Main.GsGCDocs.SetColumnProperty("Select", "Print", "AllowEdit", True)
+Gui.F_Main.GsGCDocs.SetColumnProperty("Select", "Line", "AllowEdit", False)
+Gui.F_Main.GsGCDocs.SetColumnProperty("Select", "Filepath", "AllowEdit", False)
+Gui.F_Main.GsGCDocs.SetColumnProperty("Select", "File", "AllowEdit", False)
+
+Gui.F_Main.GsGCDocs.SetColumnProperty("Select", "Line", "MaxWidth","30")
+Gui.F_Main.GsGCDocs.SetColumnProperty("Select", "Filepath", "MinWidth","100")
+Gui.F_Main.GsGCDocs.SetColumnProperty("Select", "File", "MinWidth","100")
+Gui.F_Main.GsGCDocs.SetColumnProperty("Select", "Print", "MaxWidth","45")
+
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Label("Buildstyle_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4488_PRINT_WO_DOC_GRP_ALT.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Form1_unload)
+Function.Intrinsic.Control.EndIf
+Program.Sub.Buildstyle.End
+
+Program.Sub.Load.Start
+F.Intrinsic.Control.SetErrorHandler("Load_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sQuery.Declare(String)
+V.Local.sTemp.Declare(String)
+v.Local.sGroup.Declare(String)
+V.Local.iLinkID.Declare(Long)
+V.Local.iRow.Declare(Long)
+v.Local.iCount.Declare(Long)
+V.Local.iRows.Declare(Long,1)
+v.Local.i.Declare(long,0)
+
+'create the group datatable
+F.Data.Datatable.CreateFromSQL("Grp","con","SELECT GRP_ID FROM GCG_4488_PRINT_DOCGR WHERE TYPE = 1 and PRINT_FLAG = 1", True)
+F.Intrinsic.Control.For(v.Local.iCount, 0, v.DataTable.Grp.rowcount--, 1)
+	F.Intrinsic.Control.If(v.Local.sGroup.Trim, =, "")
+		V.Local.sGroup.Set(v.DataTable.Grp(v.Local.iCount).Grp_ID!fieldval)
+	F.Intrinsic.Control.Else
+		F.Intrinsic.String.Build("{0}','{1}", v.Local.sGroup, v.DataTable.Grp(v.Local.iCount).Grp_ID!Fieldval, v.Local.sGroup)
+	F.Intrinsic.Control.EndIf
+f.Intrinsic.Control.Next(v.Local.iCount)
+F.Data.DataTable.Close("Grp")
+
+F.Data.DataTable.CreateFromString("ROUTERS","*!*","ROUTER*!*GRP","String*!*String","*!*","@!@",True)
+
+'checks all combos of job suffix router_seq to find a reference.
+F.Intrinsic.String.Build("SELECT DISTINCT JOB, SUFFIX FROM BI_BAR_DETAIL WHERE TERMINAL = '{0}' ",V.Caller.Terminal,V.Local.sQuery)
+F.ODBC.Connection!con.OpenRecordsetRO("rstPart",V.Local.sQuery)
+Function.Intrinsic.Control.DoUntil(variable.odbc.Con!rstpart.eof,=,True)
+	F.Intrinsic.String.Build("Select Router From Job_Header where Job = '{0}' and Suffix = '{1}'", v.ODBC.con!rstPart.FieldVal!Job, v.ODBC.con!rstPart.FieldVal!Suffix, v.Local.sTemp)
+	F.ODBC.Connection!con.ExecuteAndReturn(v.Local.sTemp, "con", v.Local.sTemp)
+	
+	f.Intrinsic.Control.If(v.Local.sTemp.Trim,<>,"")
+		f.Data.DataTable.AddRow("ROUTERS","ROUTER",v.Local.sTemp)
+	f.Intrinsic.control.Endif
+	
+					
+	'creates the referene to cmpare to
+'	F.Global.DocumentControl.CreateReference(V.Local.stemp,35,V.Local.iLinkID)
+	F.Global.DocumentControl.CreateReference(V.Local.sTemp,35,V.Local.iLinkID)
+	F.Intrinsic.Control.If(V.Local.iLinkID,>,0)
+	
+		f.Intrinsic.Control.If(v.DataTable.Linked.exists,=,false)
+			F.Intrinsic.String.Build("SELECT 1 as Line,(rTrim(Path)+rtrim(File)) as Filepath, Rtrim(File) as File FROM ATG_DOC_ASSOC WHERE LINK_ID = '{0}' AND GRP_ID In ('{1}') ",V.Local.iLinkID,v.Local.sGroup,V.Local.sQuery)
+			'Load to DataTable
+			F.Data.DataTable.CreateFromSQL("Linked", "con", v.Local.sQuery, True)
+			F.Data.DataTable.AddColumn("Linked", "Print", "Boolean",True)
+		f.Intrinsic.Control.Else
+			F.Intrinsic.String.Build("SELECT 1 as Line,(rTrim(Path)+rtrim(File)) as Filepath, Rtrim(File) as File FROM ATG_DOC_ASSOC WHERE LINK_ID = '{0}' AND GRP_ID In ('{1}') ",V.Local.iLinkID,v.Local.sGroup,V.Local.sQuery)
+			F.ODBC.Connection!con.OpenRecordsetRO("rstLINKED",V.Local.sQuery)
+			
+			F.Intrinsic.Control.If(V.ODBC.con!rstLINKED.EOF,<>,True)
+				f.Data.DataTable.AddRow("Linked","LINE",v.odbc.con!rstLINKED.fieldval!LINE,"FILEPATH",v.odbc.con!rstLINKED.fieldval!Filepath,"File",v.odbc.con!rstLINKED.fieldval!File)
+			F.Intrinsic.Control.EndIf
+			
+			f.ODBC.con!rstLINKED.Close
+		f.Intrinsic.Control.EndIf
+		
+	F.Intrinsic.Control.EndIf
+	F.ODBC.con!rstPart.MoveNext
+Function.Intrinsic.Control.Loop
+
+F.Intrinsic.Control.If(V.DataTable.Linked.Exists,=,True)
+	F.Data.DataTable.RunningTotal("Linked", "Line", 0, "+", "Line")
+	Gui.F_Main.GsGCDocs.AddGridviewFromDatatable("Select", "Linked")
+	gui.F_Main.GsGCDocs.MainView("Select")
+F.Intrinsic.Control.ElseIf
+	F.Intrinsic.UI.Msgbox("No Linked Documents Found")
+	F.Intrinsic.Control.CallSub(form1_unload)
+F.Intrinsic.Control.EndIf
+
+F.ODBC.con!rstPart.Close
+
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Label("Load_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4488_PRINT_WO_DOC_GRP_ALT.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Form1_unload)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Load.End
+
+Program.Sub.Comments.Start
+${$0$}$$}$$}$12:00:00 AM$}$False
+${$3$}$0$}$$}$-1$}$-1$}$$}$1/1/1900$}$Selection grid will poup up at the end and ask the user which documents to print.
+Program.Sub.Comments.End
